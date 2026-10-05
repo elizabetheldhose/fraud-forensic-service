@@ -1,0 +1,45 @@
+name: CI/CD Pipeline - Fraud Forensic Platform
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Compile and Run Async Test Suite
+        run: mvn clean verify
+
+      - name: Set up Python Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Lambda Dependencies and Package Artifact
+        run: |
+          cd infrastructure/lambda
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt -t .
+          fi
+          zip -r ../../lambda_artifact.zip .
+
+      - name: Upload Packaged Lambda Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: serverless-lambda-package
+          path: lambda_artifact.zip
+          retention-days: 5
