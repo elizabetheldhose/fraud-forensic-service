@@ -1,0 +1,15 @@
+com\ibm\forensic\dto\PresignedUrlRequest.class
+com\ibm\forensic\exception\PresignedUrlGenerationException.class
+com\ibm\forensic\service\ForensicSearchService.class
+com\ibm\forensic\dto\ForensicSearchResponse.class
+com\ibm\forensic\exception\GlobalExceptionHandler.class
+com\ibm\forensic\dto\ApiErrorResponse.class
+com\ibm\forensic\service\S3PresignService.class
+com\ibm\forensic\controller\ReportController.class
+com\ibm\forensic\controller\UploadController.class
+com\ibm\forensic\dto\PresignedUrlResponse.class
+com\ibm\forensic\config\AwsConfig.class
+com\ibm\forensic\exception\ForensicSearchException.class
+com\ibm\forensic\dto\ForensicSearchResponse$ForensicHit.class
+com\ibm\forensic\FraudForensicApplication.class
+com\ibm\forensic\dto\ForensicSearchRequest.class

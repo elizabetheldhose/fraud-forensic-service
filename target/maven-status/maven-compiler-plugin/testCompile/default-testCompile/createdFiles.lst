@@ -1,0 +1,16 @@
+com\ibm\forensic\service\S3PresignServiceTest$ErrorPath.class
+com\ibm\forensic\service\S3PresignServiceTest$HappyPath.class
+com\ibm\forensic\controller\UploadControllerTest$ContentTypeValidation.class
+com\ibm\forensic\controller\ReportControllerTest.class
+com\ibm\forensic\controller\UploadControllerTest.class
+com\ibm\forensic\controller\UploadControllerTest$ErrorPropagation.class
+com\ibm\forensic\service\S3PresignServiceTest.class
+com\ibm\forensic\controller\ReportControllerTest$QueryValidation.class
+com\ibm\forensic\controller\ReportControllerTest$HappyPath.class
+com\ibm\forensic\controller\ReportControllerTest$CaseIdValidation.class
+com\ibm\forensic\controller\UploadControllerTest$FileNameValidation.class
+com\ibm\forensic\controller\UploadControllerTest$HappyPath.class
+com\ibm\forensic\controller\UploadControllerTest$FileSizeValidation.class
+com\ibm\forensic\controller\UploadControllerTest$CaseIdValidation.class
+com\ibm\forensic\service\S3PresignServiceTest$KeySanitisation.class
+com\ibm\forensic\controller\ReportControllerTest$ErrorPropagation.class
