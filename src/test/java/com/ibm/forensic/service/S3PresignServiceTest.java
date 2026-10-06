@@ -23,18 +23,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for {@link S3PresignService}.
- *
- * <p>The AWS {@link S3Presigner} is mocked so tests run without AWS credentials
- * or network access.</p>
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("S3PresignService")
 class S3PresignServiceTest {
 
-    private static final String BUCKET  = "fraud-forensic-logs";
-    private static final long   EXPIRY  = 15L;
+    private static final String BUCKET = "fraud-forensic-logs";
+    private static final long   EXPIRY = 15L;
 
     @Mock
     private S3Presigner presigner;
@@ -49,17 +43,8 @@ class S3PresignServiceTest {
         service = new S3PresignService(presigner, BUCKET, EXPIRY);
     }
 
-    // -----------------------------------------------------------------------
-    // Helpers
-    // -----------------------------------------------------------------------
-
     private static PresignedUrlRequest validRequest() {
-        return new PresignedUrlRequest(
-                "case-001",
-                "transaction-logs.log",
-                2048L,
-                "text/plain"
-        );
+        return new PresignedUrlRequest("case-001", "transaction-logs.log", 2048L, "text/plain");
     }
 
     private void stubPresigner(String urlString) throws MalformedURLException {
@@ -69,10 +54,6 @@ class S3PresignServiceTest {
                 .thenReturn(presignedPutObjectRequest);
     }
 
-    // -----------------------------------------------------------------------
-    // Happy-path tests
-    // -----------------------------------------------------------------------
-
     @Nested
     @DisplayName("generatePresignedPutUrl — happy path")
     class HappyPath {
@@ -80,13 +61,9 @@ class S3PresignServiceTest {
         @Test
         @DisplayName("returns a response with the pre-signed URL from S3Presigner")
         void returnsPresignedUrl() throws MalformedURLException {
-            String expectedUrl =
-                    "https://fraud-forensic-logs.s3.amazonaws.com/fraud-logs/case-001/" +
-                    "transaction-logs.log?X-Amz-Signature=abc123";
+            String expectedUrl = "https://fraud-forensic-logs.s3.amazonaws.com/fraud-logs/case-001/transaction-logs.log?X-Amz-Signature=abc123";
             stubPresigner(expectedUrl);
-
             PresignedUrlResponse response = service.generatePresignedPutUrl(validRequest());
-
             assertThat(response.presignedUrl()).isEqualTo(expectedUrl);
         }
 
@@ -94,9 +71,7 @@ class S3PresignServiceTest {
         @DisplayName("sets httpMethod to PUT")
         void setsHttpMethodToPut() throws MalformedURLException {
             stubPresigner("https://s3.example.com/fraud-logs/case-001/transaction-logs.log");
-
             PresignedUrlResponse response = service.generatePresignedPutUrl(validRequest());
-
             assertThat(response.httpMethod()).isEqualTo("PUT");
         }
 
@@ -104,11 +79,8 @@ class S3PresignServiceTest {
         @DisplayName("builds S3 key as fraud-logs/<caseId>/<fileName>")
         void buildsCorrectS3Key() throws MalformedURLException {
             stubPresigner("https://s3.example.com/key");
-
             PresignedUrlResponse response = service.generatePresignedPutUrl(validRequest());
-
-            assertThat(response.s3Key())
-                    .isEqualTo("fraud-logs/case-001/transaction-logs.log");
+            assertThat(response.s3Key()).isEqualTo("fraud-logs/case-001/transaction-logs.log");
         }
 
         @Test
@@ -116,11 +88,8 @@ class S3PresignServiceTest {
         void expiresAtIsApproximatelyNowPlusExpiry() throws MalformedURLException {
             stubPresigner("https://s3.example.com/key");
             Instant before = Instant.now();
-
             PresignedUrlResponse response = service.generatePresignedPutUrl(validRequest());
-
             Instant after = Instant.now();
-            // expiresAt should be within [before+expiry, after+expiry] with a small tolerance
             assertThat(response.expiresAt())
                     .isAfterOrEqualTo(before.plusSeconds(EXPIRY * 60 - 2))
                     .isBeforeOrEqualTo(after.plusSeconds(EXPIRY * 60 + 2));
@@ -130,16 +99,10 @@ class S3PresignServiceTest {
         @DisplayName("delegates to S3Presigner exactly once")
         void delegatesToPresignerOnce() throws MalformedURLException {
             stubPresigner("https://s3.example.com/key");
-
             service.generatePresignedPutUrl(validRequest());
-
             verify(presigner, times(1)).presignPutObject(any(PutObjectPresignRequest.class));
         }
     }
-
-    // -----------------------------------------------------------------------
-    // Path-traversal sanitisation
-    // -----------------------------------------------------------------------
 
     @Nested
     @DisplayName("S3 key sanitisation")
@@ -148,22 +111,12 @@ class S3PresignServiceTest {
         @Test
         @DisplayName("strips forward slashes from fileName to prevent path traversal")
         void stripsForwardSlashes() throws MalformedURLException {
-            // Note: validation normally blocks this, but the sanitiser is the last line of defence.
-            // Supply a fileName that contains a path separator to verify the sanitiser strips it.
-            PresignedUrlRequest req = new PresignedUrlRequest(
-                    "case-007", "../malicious.log", 100L, "text/plain");
+            PresignedUrlRequest req = new PresignedUrlRequest("case-007", "../malicious.log", 100L, "text/plain");
             stubPresigner("https://s3.example.com/key");
-
             PresignedUrlResponse response = service.generatePresignedPutUrl(req);
-
-            // After sanitisation the key must not traverse directories
             assertThat(response.s3Key()).doesNotContain("../");
         }
     }
-
-    // -----------------------------------------------------------------------
-    // Error-path tests
-    // -----------------------------------------------------------------------
 
     @Nested
     @DisplayName("generatePresignedPutUrl — error path")
@@ -174,7 +127,6 @@ class S3PresignServiceTest {
         void wrapsAwsSdkException() {
             when(presigner.presignPutObject(any(PutObjectPresignRequest.class)))
                     .thenThrow(new RuntimeException("AWS SDK error"));
-
             assertThatThrownBy(() -> service.generatePresignedPutUrl(validRequest()))
                     .isInstanceOf(PresignedUrlGenerationException.class)
                     .hasMessageContaining("fraud-logs/case-001/transaction-logs.log")
@@ -186,7 +138,6 @@ class S3PresignServiceTest {
         void exceptionMessageIncludesKey() {
             when(presigner.presignPutObject(any(PutObjectPresignRequest.class)))
                     .thenThrow(new RuntimeException("timeout"));
-
             assertThatThrownBy(() -> service.generatePresignedPutUrl(validRequest()))
                     .isInstanceOf(PresignedUrlGenerationException.class)
                     .hasMessageContaining("case-001");

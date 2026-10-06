@@ -18,12 +18,12 @@ import software.amazon.awssdk.services.sqs.SqsClient;
  *
  * <p>Credentials are resolved automatically via the {@link DefaultCredentialsProvider}
  * chain (env vars → system props → IAM role → ~/.aws/credentials).
- * No credentials are hard-coded here — see security policy section 4.</p>
+ * No credentials are hard-coded here.</p>
  */
 @Configuration
 public class AwsConfig {
 
-    @Value("${aws.region:us-east-1}")
+    @Value("${aws.region:ap-south-1}")
     private String awsRegion;
 
     @Value("${aws.opensearch.endpoint}")
@@ -53,26 +53,19 @@ public class AwsConfig {
                 .build();
     }
 
-    /**
-     * High-level OpenSearch client backed by AWS SigV4 transport.
-     *
-     * <p>The {@link AwsSdk2Transport} wraps an {@link ApacheHttpClient} and signs
-     * every HTTP request with SigV4 using the same {@link DefaultCredentialsProvider}
-     * chain as the other AWS clients.  For OpenSearch <em>Serverless</em> the
-     * service name must be {@code "aoss"}; for a managed OpenSearch domain use
-     * {@code "es"} instead.</p>
-     *
-     * <p>TLS is enforced by the HTTPS endpoint URI — the Apache HTTP client
-     * validates the server certificate against the JVM trust store by default.</p>
-     */
     @Bean
     public OpenSearchClient openSearchClient() {
         var httpClient = ApacheHttpClient.builder().build();
 
+        // AwsSdk2Transport expects the bare host without scheme
+        String host = openSearchEndpoint
+                .replace("https://", "")
+                .replace("http://", "");
+
         AwsSdk2Transport transport = new AwsSdk2Transport(
                 httpClient,
-                openSearchEndpoint,
-                "aoss",   // service name for OpenSearch Serverless; use "es" for managed domains
+                host,
+                "aoss",
                 Region.of(awsRegion),
                 AwsSdk2TransportOptions.builder()
                         .setCredentials(DefaultCredentialsProvider.create())

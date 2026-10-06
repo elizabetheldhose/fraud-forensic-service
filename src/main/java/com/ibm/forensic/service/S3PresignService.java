@@ -16,20 +16,6 @@ import java.time.Instant;
 
 /**
  * Service responsible for generating pre-signed S3 PUT URLs.
- *
- * <p>Design decisions:
- * <ul>
- *   <li>The S3 object key is deterministically derived from {@code caseId} and
- *       {@code fileName} so that duplicate uploads overwrite the same object
- *       rather than creating orphaned copies.</li>
- *   <li>The URL validity window ({@code s3.presign.expiry-minutes}) is
- *       externalised to application properties and defaults to 15 minutes —
- *       short enough to limit the blast radius of a leaked URL.</li>
- *   <li>All AWS SDK calls are made on the calling (virtual) thread; the SDK
- *       uses non-blocking HTTP under the hood, so virtual-thread pinning is
- *       not a concern here.</li>
- * </ul>
- * </p>
  */
 @Slf4j
 @Service
@@ -50,14 +36,6 @@ public class S3PresignService {
         this.urlExpiry  = Duration.ofMinutes(expiryMinutes);
     }
 
-    /**
-     * Generates a pre-signed HTTPS PUT URL that the frontend can use to upload
-     * a file directly to S3 without routing the bytes through this service.
-     *
-     * @param request validated upload metadata from the controller
-     * @return {@link PresignedUrlResponse} containing the URL and expiry metadata
-     * @throws PresignedUrlGenerationException if the AWS SDK call fails
-     */
     public PresignedUrlResponse generatePresignedPutUrl(PresignedUrlRequest request) {
         String s3Key = buildS3Key(request.caseId(), request.fileName());
         log.info("Generating pre-signed PUT URL — bucket={} key={} expiry={}",
@@ -91,12 +69,7 @@ public class S3PresignService {
         }
     }
 
-    /**
-     * Builds a deterministic S3 object key that is safe against path-traversal attacks.
-     * Format: {@code fraud-logs/<caseId>/<sanitisedFileName>}
-     */
     private String buildS3Key(String caseId, String fileName) {
-        // Strip any remaining path separators that slipped past validation
         String safeFileName = fileName.replaceAll("[/\\\\]", "_");
         return "%s/%s/%s".formatted(KEY_PREFIX, caseId, safeFileName);
     }

@@ -10,7 +10,6 @@ import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -38,8 +37,8 @@ import java.util.concurrent.CompletableFuture;
  * <h2>Query structure</h2>
  * <p>A {@code bool} query is composed of:
  * <ul>
- *   <li>A {@code term} filter on the {@code caseId} field — limits results to a
- *       specific fraud case without scoring overhead.</li>
+ *   <li>A {@code match} filter on the {@code caseId} field — uses analyzed matching
+ *       so it works regardless of how OpenSearch mapped the field.</li>
  *   <li>A {@code match} clause on the {@code content} field — full-text relevance
  *       ranking against the query string.</li>
  * </ul>
@@ -103,10 +102,10 @@ public class ForensicSearchService {
     // -------------------------------------------------------------------------
 
     private SearchRequest buildSearchRequest(ForensicSearchRequest request) {
-        // term filter: restrict to the requested fraud case (no scoring overhead)
-        Query caseFilter = Query.of(q -> q.term(
-                TermQuery.of(t -> t.field(FIELD_CASE_ID)
-                        .value(FieldValue.of(request.caseId())))));
+        // match filter on caseId: works with both keyword and analyzed text mappings
+        Query caseFilter = Query.of(q -> q.match(
+                MatchQuery.of(m -> m.field(FIELD_CASE_ID)
+                        .query(FieldValue.of(request.caseId())))));
 
         // match query: full-text relevance ranking on the indexed document content
         Query contentMatch = Query.of(q -> q.match(
