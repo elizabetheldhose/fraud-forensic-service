@@ -8,7 +8,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -72,5 +74,21 @@ public class AwsConfig {
                         .build());
 
         return new OpenSearchClient(transport);
+    }
+
+    /**
+     * Async Bedrock Runtime client backed by Netty NIO.
+     *
+     * <p>Credentials are resolved via {@link DefaultCredentialsProvider} — no
+     * credentials are stored here.  The client is a singleton managed by Spring
+     * and is safe to share across virtual threads.</p>
+     */
+    @Bean
+    public BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient() {
+        return BedrockRuntimeAsyncClient.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .httpClientBuilder(NettyNioAsyncHttpClient.builder())
+                .build();
     }
 }

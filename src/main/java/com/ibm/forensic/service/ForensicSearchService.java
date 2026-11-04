@@ -39,8 +39,8 @@ import java.util.concurrent.CompletableFuture;
  * <ul>
  *   <li>A {@code match} filter on the {@code caseId} field — uses analyzed matching
  *       so it works regardless of how OpenSearch mapped the field.</li>
- *   <li>A {@code match} clause on the {@code content} field — full-text relevance
- *       ranking against the query string.</li>
+ *   <li>An optional ({@code should}) {@code match} clause on the {@code content} field —
+ *       ranks the case's documents by relevance without discarding non-matching ones.</li>
  * </ul>
  * </p>
  *
@@ -107,13 +107,16 @@ public class ForensicSearchService {
                 MatchQuery.of(m -> m.field(FIELD_CASE_ID)
                         .query(FieldValue.of(request.caseId())))));
 
-        // match query: full-text relevance ranking on the indexed document content
+        // match query: full-text relevance ranking on the indexed document content.
+        // Optional (should): every document of the case is returned, best matches first,
+        // so a question phrased differently from the text ("charged back" vs "chargeback")
+        // still gets the case's evidence instead of zero hits.
         Query contentMatch = Query.of(q -> q.match(
                 MatchQuery.of(m -> m.field(FIELD_CONTENT)
                         .query(FieldValue.of(request.query())))));
 
         Query boolQuery = Query.of(q -> q.bool(
-                BoolQuery.of(b -> b.filter(caseFilter).must(contentMatch))));
+                BoolQuery.of(b -> b.filter(caseFilter).should(contentMatch))));
 
         return SearchRequest.of(s -> s
                 .index(indexName)
@@ -138,7 +141,9 @@ public class ForensicSearchService {
     private ForensicHit toForensicHit(Hit<Map> hit) {
         Map<String, Object> source = hit.source() != null ? hit.source() : Map.of();
         String s3Key  = (String) source.getOrDefault(FIELD_S3_KEY, "");
-        String excerpt = (String) source.getOrDefault(FIELD_EXCERPT, "");
+        // The ingestion Lambda stores the document text in "content"; "excerpt" is optional.
+        String excerpt = (String) source.getOrDefault(FIELD_EXCERPT,
+                source.getOrDefault(FIELD_CONTENT, ""));
         double score  = hit.score() != null ? hit.score() : 0.0;
         return new ForensicHit(hit.id(), s3Key, score, excerpt);
     }

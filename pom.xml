@@ -113,6 +113,20 @@
             <artifactId>apache-client</artifactId>
         </dependency>
 
+        <!-- AWS SDK v2 — Bedrock Runtime (async streaming for Converse API) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>bedrockruntime</artifactId>
+        </dependency>
+
+        <!-- Netty async HTTP client — required at compile scope for BedrockRuntimeAsyncClient;
+             already on the classpath transitively from s3 at runtime scope, but an explicit
+             compile-scope entry is needed so AwsConfig can reference NettyNioAsyncHttpClient. -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>netty-nio-client</artifactId>
+        </dependency>
+
         <!-- Jackson mapper module required by opensearch-java -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

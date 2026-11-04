@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 
 import java.util.stream.Collectors;
 
@@ -47,6 +48,24 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_GATEWAY)
                 .body(ApiErrorResponse.of(502, "Bad Gateway",
                         "Unable to complete forensic search. Please try again later."));
+    }
+
+    @ExceptionHandler(ForensicChatException.class)
+    public ResponseEntity<ApiErrorResponse> handleChatError(ForensicChatException ex) {
+        log.error("Bedrock RAG stream failed", ex);
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(ApiErrorResponse.of(502, "Bad Gateway",
+                        "Unable to complete forensic analysis. Please try again later."));
+    }
+
+    @ExceptionHandler(AsyncRequestTimeoutException.class)
+    public ResponseEntity<ApiErrorResponse> handleAsyncTimeout(AsyncRequestTimeoutException ex) {
+        log.warn("Chat stream timed out", ex);
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiErrorResponse.of(503, "Service Unavailable",
+                        "Analysis stream timed out. Please try again later."));
     }
 
     @ExceptionHandler(Exception.class)

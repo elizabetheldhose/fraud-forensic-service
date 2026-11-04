@@ -99,8 +99,14 @@ def lambda_handler(event, context):
         # 4. Generate AI semantic embeddings via AWS Bedrock
         vector_array = get_vector_embeddings(masked_content)
         
-        # 5. Extract operational metadata from pathing (assuming format: caseId/file.txt)
-        case_id = s3_key.split('/')[0] if '/' in s3_key else "unassigned-case"
+        # 5. Extract caseId from the key written by the backend: fraud-logs/{caseId}/{fileName}
+        key_parts = s3_key.split('/')
+        if len(key_parts) >= 3 and key_parts[0] == 'fraud-logs':
+            case_id = key_parts[1]
+        elif len(key_parts) >= 2:
+            case_id = key_parts[0]
+        else:
+            case_id = "unassigned-case"
         
         # 6. Compose the target search document
         document = {

@@ -1,0 +1,19 @@
+# Build output
+target/
+
+# Logs
+*.log
+
+# Secrets and local environment
+.env
+.env.*
+*.pem
+.aws/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
